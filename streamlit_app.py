@@ -123,9 +123,7 @@ def vygeneruj_pune(r):
     vyhlaska = r["vyhlaska"]
     den = r.get("den", 1)
     mes = r.get("mes", 1)
-    mesice = ["ledna","února","března","dubna","května","června",
-              "července","srpna","září","října","listopadu","prosince"]
-    datum = f"{den}. {mesice[mes-1]} {rok}"
+    datum = f"{den}. {mes}. {rok}"
 
     if pracovnici == 1:
         ucastnil = "Šetření se účastnil"
