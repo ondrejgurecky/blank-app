@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import math
 
 # KONFIGURACE
 API_KEY = st.secrets.get("MAPY_API")
