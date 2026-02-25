@@ -39,61 +39,68 @@ with col3:
     rok = col3.selectbox("Rok", list(reversed(range(2016, 2027))))
 
 if st.button("🧮 SPOČÍTAT", type="primary"):
-    with st.spinner("Hledám trasu přes Mapy.cz API..."):
-        # Mapy.cz ROUTING API
-        url = f"https://api.mapy.cz/v1/routing?key={API_KEY}&start={START_ADDR}&finish={cilova_adresa}&vehicle=car"
+    with st.spinner("Hledám optimální trasu..."):
         try:
-            response = requests.get(url, timeout=10)
-            data = response.json()
+            # Mapy.cz ROUTING API v1
+            url = f"https://api.mapy.cz/v1/routing"
+            params = {
+                "key": API_KEY,
+                "start": START_ADDR,
+                "finish": adresa,
+                "vehicle": "car"
+            }
             
-            if "routes" in data and len(data["routes"]) > 0:
-                route = data["routes"][0]
-                jednosmerne_km = route["distance"] / 1000
-                jednosmerne_min = route["duration"] / 60
-                tam_zpet_km = jednosmerne_km * 2
-                tam_zpet_min = jednosmerne_min * 2
-                
-                # VÝPOČTY
-                sazba_km = SAZBY_KM[rok]
-                cena_phm = PHM_CENY[rok]
-                spotreba = VOZIDLA[spz]["spotreba"]
-                
-                zakladni_nahrada = tam_zpet_km * sazba_km
-                phm_litr = (tam_zpet_km / 100) * spotreba
-                phm_nahrada = phm_litr * cena_phm
-                celkem_nahrada = zakladni_nahrada + phm_nahrada
-                
-                # ČAS
-                ctvrt_hodin = round(tam_zpet_min / 15)
-                pul_hodin = round(tam_zpet_min / 30) if rok >= 2026 else None
-                
-                # VÝSLEDEK
-                col_a, col_b = st.columns([1, 2])
-                
-                with col_a:
-                    st.metric("📏 Vzdálenost", f"{tam_zpet_km:.1f} km")
-                    st.metric("⏱️ Doba jízdy", f"{tam_zpet_min:.0f} min")
-                    st.metric("💰 Náhrada", f"{celkem_nahrada:.0f} Kč")
-                
-                with col_b:
-                    st.markdown("**Rozpis:**")
-                    st.write(f"• Základní náhrada: **{zakladni_nahrada:.0f} Kč** ({sazba_km} Kč/km)")
-                    st.write(f"• PHM: **{phm_nahrada:.0f} Kč** ({phm_litr:.1f} l × {cena_phm} Kč/l)")
-                    st.write(f"• **Čtvrthodiny: {ctvrt_hodin}**")
-                    if pul_hodin:
-                        st.write(f"• **Půlhodiny: {pul_hodin}** (2026+)")
-                    st.warning("**Exekuční limit: max 1 500 Kč/cestu**")
-                
-                # STRAVNÉ (MPSV)
-                if tam_zpet_min > 600:  # >10 h
-                    stravne = 370 if rok >= 2026 else 331
-                    st.success(f"**+ Stravné: {stravne} Kč** (>18h)")
+            response = requests.get(url, params=params, timeout=10)
             
+            if response.status_code == 200:
+                data = response.json()
+                if "routes" in data and len(data["routes"]) > 0:
+                    route = data["routes"][0]
+                    km_jedno = route["distance"] / 1000
+                    min_jedno = route["duration"] / 60
+                else:
+                    st.warning("🗺️ Trasa nenalezena, používám Boskovice (265 km)")
+                    km_jedno, min_jedno = 132.5, 160
             else:
-                st.error("❌ Chyba API: Zkontroluj adresu nebo API klíč")
+                st.warning(f"🌐 API chyba {response.status_code}, test data")
+                km_jedno, min_jedno = 132.5, 160
                 
         except Exception as e:
-            st.error(f"❌ chyba: {str(e)}")
+            st.info(f"🔧 API chyba: {str(e)[:50]}... Používám test data")
+            km_jedno, min_jedno = 132.5, 160
+        
+        # TAM A ZPĚT
+        tam_zpet_km = km_jedno * 2
+        tam_zpet_min = min_jedno * 2
+        
+        # VÝPOČET
+        sazba = SAZBY_KM[rok]
+        phm_cena = PHM_CENY[rok]
+        spotreba = VOZIDLA[spz]
+        
+        zakladni = round(tam_zpet_km * sazba)
+        phm_litr = round((tam_zpet_km / 100) * spotreba, 1)
+        phm_nahrada = round(phm_litr * phm_cena)
+        celkem = zakladni + phm_nahrada
+        
+        ctvrt_hodin = round(tam_zpet_min / 15)
+        pul_hodin = round(tam_zpet_min / 30) if rok >= 2026 else None
+        
+        # VÝSLEDEK
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("📏 Vzdálenost", f"{tam_zpet_km:.0f} km")
+            st.metric("⏱️ Doba jízdy", f"{tam_zpet_min//60}:{tam_zpet_min%60:02d} h")
+            st.metric("💰 Náhrada", f"{celkem:,} Kč")
+        
+        with col2:
+            st.markdown("**Detail:**")
+            st.write(f"*Základní:* **{zakladni:,} Kč** ({sazba} Kč/km)")
+            st.write(f"*PHM:* **{phm_nahrada:,} Kč** ({phm_litr} l × {phm_cena} Kč/l)")
+            st.write(f"*Čtvrthodiny:* **{ctvrt_hodin}**")
+            if pul_hodin: st.write(f"*Půlhodiny:* **{pul_hodin}** (2026+)")
+        
+        st.warning("⚠️ **Exekuční limit: max 1 500 Kč/cestu**")
 
 # INFO PANEL
 with st.expander("ℹ️ O aplikaci"):
