@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 import math
+import io
+import openpyxl
 
 # KONFIGURACE
 API_KEY = st.secrets.get("MAPY_API")
@@ -24,18 +26,16 @@ SAZBY_KM = {
     2016: 3.80, 2017: 3.90, 2018: 4.00, 2019: 4.10, 2020: 4.20,
     2021: 4.40, 2022: 4.70, 2023: 5.20, 2024: 5.60, 2025: 5.80, 2026: 5.90
 }
-
-PHM_CENY = {  # BA95 benzín – průměrná cena dle MPSV vyhlášky (Kč/l)
+PHM_CENY = {
     2016: 29.50, 2017: 29.50, 2018: 30.50, 2019: 33.10, 2020: 32.00,
     2021: 27.80, 2022: 37.10, 2023: 41.20, 2024: 38.20, 2025: 35.80, 2026: 34.70
 }
 
 
 def cz(cislo, des=2):
-    """Formátuje číslo s českou desetinnou čárkou a mezerou jako oddělovačem tisíců."""
-    formatted = f"{cislo:,.{des}f}"          # 1,234.56
-    formatted = formatted.replace(",", " ")  # 1 234.56
-    formatted = formatted.replace(".", ",")  # 1 234,56
+    formatted = f"{cislo:,.{des}f}"
+    formatted = formatted.replace(",", " ")
+    formatted = formatted.replace(".", ",")
     return formatted
 
 
@@ -66,8 +66,44 @@ def get_route(start_addr, end_addr, api_key):
     return km, min_
 
 
+def vypocitej(adresa, spz, rok):
+    """Spočítá náhrady pro danou adresu, SPZ a rok. Vrátí dict s výsledky nebo None při chybě."""
+    try:
+        km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
+    except Exception:
+        return None
+
+    tam_zpet_km = km_jedno * 2
+    tam_zpet_min = min_jedno * 2
+
+    sazba = SAZBY_KM[rok]
+    phm_cena = PHM_CENY[rok]
+    spotreba = VOZIDLA[spz]["spotreba"]
+    model = VOZIDLA[spz]["model"]
+
+    zakladni = round(tam_zpet_km * sazba, 2)
+    phm_litr = (tam_zpet_km / 100) * spotreba
+    phm_nahrada = round(phm_litr * phm_cena, 2)
+    celkem = math.ceil(zakladni + phm_nahrada)
+
+    ctvrt_hodin = round(tam_zpet_min / 15) if rok < 2026 else None
+    pul_hodin = round(tam_zpet_min / 30) if rok >= 2026 else None
+    hod = int(tam_zpet_min // 60)
+    min_ = int(tam_zpet_min % 60)
+
+    return {
+        "rok": rok, "adresa": adresa, "tam_zpet_km": tam_zpet_km,
+        "model": model, "spotreba": spotreba, "sazba": sazba,
+        "phm_cena": phm_cena, "zakladni": zakladni, "phm_litr": phm_litr,
+        "phm_nahrada": phm_nahrada, "celkem": celkem,
+        "ctvrt_hodin": ctvrt_hodin, "pul_hodin": pul_hodin,
+        "hod": hod, "min_": min_,
+        "pracovnici": st.session_state.get("pracovnici_radio", 1),
+        "vyhlaska": VYHLASKY[rok],
+    }
+
+
 def vygeneruj_pune(r):
-    """Vygeneruje text PUNE věty z dict r (výsledky výpočtu)."""
     rok = r["rok"]
     adresa = r["adresa"]
     km = r["tam_zpet_km"]
@@ -150,100 +186,128 @@ st.set_page_config(page_title="Exekutorský kalkulátor", layout="wide")
 st.title("🛣️ Exekutorský kalkulátor cestovních náhrad 2016–2026")
 st.markdown("**Šátalská 469/1, Praha 4 → [adresa] a zpět**")
 
-# INPUT
-col1, col2, col3 = st.columns(3)
-adresa = col1.text_input("Cílová adresa", "")
-spz = col2.selectbox("SPZ vozidla", list(VOZIDLA.keys()))
-rok = col3.selectbox("Rok", list(reversed(range(2016, 2027))))
+tab1, tab2 = st.tabs(["📍 Jedna adresa", "📊 Hromadné zpracování (Excel)"])
 
-if st.button("🧮 SPOČÍTAT", type="primary"):
-    with st.spinner("Hledám optimální trasu..."):
-        try:
-            km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
-        except Exception as e:
-            st.warning(f"🌐 API chyba: {str(e)[:80]}... Používám test data")
-            km_jedno, min_jedno = 132.5, 160
+# ═══════════════════════════════════════════════════════════════
+# TAB 1 – JEDNA ADRESA
+# ═══════════════════════════════════════════════════════════════
+with tab1:
+    col1, col2, col3 = st.columns(3)
+    adresa = col1.text_input("Cílová adresa", "")
+    spz = col2.selectbox("SPZ vozidla", list(VOZIDLA.keys()), key="spz_single")
+    rok = col3.selectbox("Rok", list(reversed(range(2016, 2027))), key="rok_single")
 
-        tam_zpet_km = km_jedno * 2
-        tam_zpet_min = min_jedno * 2
+    if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
+        with st.spinner("Hledám optimální trasu..."):
+            vysledky = vypocitej(adresa, spz, rok)
+            if vysledky is None:
+                st.warning("🌐 API chyba – trasu se nepodařilo načíst.")
+            else:
+                vysledky["pracovnici"] = st.session_state.get("pracovnici_radio", 1)
+                st.session_state["vysledky"] = vysledky
 
-        sazba = SAZBY_KM[rok]
-        phm_cena = PHM_CENY[rok]
-        spotreba = VOZIDLA[spz]["spotreba"]
-        model = VOZIDLA[spz]["model"]
+    if "vysledky" in st.session_state:
+        r = st.session_state["vysledky"]
+        st.divider()
 
-        zakladni = round(tam_zpet_km * sazba, 2)
-        phm_litr = (tam_zpet_km / 100) * spotreba
-        phm_nahrada = round(phm_litr * phm_cena, 2)
-        celkem = math.ceil(zakladni + phm_nahrada)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("📏 Vzdálenost tam + zpět", f"{cz(r['tam_zpet_km'], 0)} km")
+            st.metric("⏱️ Doba jízdy", f"{r['hod']}:{r['min_']:02d} h")
+            st.metric("💰 Náhrada km + PHM", f"{cz(r['celkem'], 0)} Kč")
+        with col2:
+            st.markdown("**Detail:**")
+            st.write(f"*Základní:* **{cz(r['zakladni'])} Kč** ({cz(r['sazba'], 2)} Kč/km)")
+            st.write(f"*PHM:* **{cz(r['phm_nahrada'])} Kč** ({cz(r['phm_litr'], 2)} l × {cz(r['phm_cena'], 2)} Kč/l)")
+            if r["rok"] >= 2026:
+                st.write(f"*Půlhodiny:* **{r['pul_hodin']}** × 150 Kč (max 1 000 Kč/pracovník)")
+            else:
+                st.write(f"*Čtvrthodiny:* **{r['ctvrt_hodin']}** × 50 Kč (max 500 Kč/pracovník)")
 
-        ctvrt_hodin = round(tam_zpet_min / 15) if rok < 2026 else None
-        pul_hodin = round(tam_zpet_min / 30) if rok >= 2026 else None
-        hod = int(tam_zpet_min // 60)
-        min_ = int(tam_zpet_min % 60)
+        st.warning("⚠️ **Exekuční limit: max 1 500 Kč/cestu**")
 
-        st.session_state["vysledky"] = {
-            "rok": rok,
-            "adresa": adresa,
-            "tam_zpet_km": tam_zpet_km,
-            "model": model,
-            "spotreba": spotreba,
-            "sazba": sazba,
-            "phm_cena": phm_cena,
-            "zakladni": zakladni,
-            "phm_litr": phm_litr,
-            "phm_nahrada": phm_nahrada,
-            "celkem": celkem,
-            "ctvrt_hodin": ctvrt_hodin,
-            "pul_hodin": pul_hodin,
-            "hod": hod,
-            "min_": min_,
-            "pracovnici": st.session_state.get("pracovnici_radio", 1),
-            "vyhlaska": VYHLASKY[rok],
-        }
+        st.divider()
+        st.subheader("📄 Věta pro PUNE")
 
-# ─── VÝSLEDKY + PUNE ─────────────────────────────────────────────────────────
-if "vysledky" in st.session_state:
-    r = st.session_state["vysledky"]
+        pracovnici = st.radio(
+            "Počet pracovníků soudního exekutora:",
+            options=[1, 2, 3],
+            format_func=lambda x: {1: "1 pracovník", 2: "2 pracovníci", 3: "3 pracovníci"}[x],
+            horizontal=True,
+            key="pracovnici_radio"
+        )
 
-    st.divider()
+        r["pracovnici"] = pracovnici
+        veta, nahrada_cas = vygeneruj_pune(r)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("📏 Vzdálenost tam + zpět", f"{cz(r['tam_zpet_km'], 0)} km")
-        st.metric("⏱️ Doba jízdy", f"{r['hod']}:{r['min_']:02d} h")
-        st.metric("💰 Náhrada km + PHM", f"{cz(r['celkem'], 0)} Kč")
-    with col2:
-        st.markdown("**Detail:**")
-        st.write(f"*Základní:* **{cz(r['zakladni'])} Kč** ({cz(r['sazba'], 2)} Kč/km)")
-        st.write(f"*PHM:* **{cz(r['phm_nahrada'])} Kč** ({cz(r['phm_litr'], 2)} l × {cz(r['phm_cena'], 2)} Kč/l)")
-        if r["rok"] >= 2026:
-            st.write(f"*Půlhodiny:* **{r['pul_hodin']}** × 150 Kč (max 1 000 Kč/pracovník)")
-        else:
-            st.write(f"*Čtvrthodiny:* **{r['ctvrt_hodin']}** × 50 Kč (max 500 Kč/pracovník)")
+        st.info(veta)
+        st.caption(f"💼 Náhrada za ztrátu času celkem: **{cz(nahrada_cas, 0)} Kč**")
+        st.markdown("*Zkopírujte text níže:*")
+        st.code(veta, language=None)
 
-    st.warning("⚠️ **Exekuční limit: max 1 500 Kč/cestu**")
+# ═══════════════════════════════════════════════════════════════
+# TAB 2 – HROMADNÉ ZPRACOVÁNÍ EXCELU
+# ═══════════════════════════════════════════════════════════════
+with tab2:
+    st.markdown("Nahrajte soubor `.xls`/`.xlsx` se **seznamem adres ve sloupci A** (bez záhlaví). Aplikace doplní:")
+    st.markdown("- **Sloupec B** – celková náhrada km + PHM (zaokrouhleno, Kč)")
+    st.markdown("- **Sloupec C** – počet čtvrthodin / půlhodin")
 
-    # ─── PUNE VĚTA ───────────────────────────────────────────────────────────
-    st.divider()
-    st.subheader("📄 Věta pro PUNE")
+    col1, col2, col3 = st.columns(3)
+    spz_batch = col1.selectbox("SPZ vozidla", list(VOZIDLA.keys()), key="spz_batch")
+    rok_batch = col2.selectbox("Rok", list(reversed(range(2016, 2027))), key="rok_batch")
 
-    pracovnici = st.radio(
-        "Počet pracovníků soudního exekutora:",
-        options=[1, 2, 3],
-        format_func=lambda x: {1: "1 pracovník", 2: "2 pracovníci", 3: "3 pracovníci"}[x],
-        horizontal=True,
-        key="pracovnici_radio"
-    )
+    uploaded = st.file_uploader("Nahrajte Excel soubor", type=["xls", "xlsx"])
 
-    # Aktualizovat počet pracovníků v session_state a vygenerovat větu
-    r["pracovnici"] = pracovnici
-    veta, nahrada_cas = vygeneruj_pune(r)
+    if uploaded and st.button("🧮 SPOČÍTAT HROMADNĚ", type="primary", key="btn_batch"):
+        wb = openpyxl.load_workbook(uploaded)
+        ws = wb.active
 
-    st.info(veta)
-    st.caption(f"💼 Náhrada za ztrátu času celkem: **{cz(nahrada_cas, 0)} Kč**")
-    st.markdown("*Zkopírujte text níže:*")
-    st.code(veta, language=None)
+        # Přidej záhlaví do B1 a C1 pokud jsou prázdné
+        jednotka_hlavicka = "půlhodin" if rok_batch >= 2026 else "čtvrthodin"
+        if ws["B1"].value is None:
+            ws["B1"] = "Náhrada km+PHM (Kč)"
+        if ws["C1"].value is None:
+            ws["C1"] = f"Počet {jednotka_hlavicka}"
+
+        adresy = []
+        for row in ws.iter_rows(min_row=1):
+            val = row[0].value
+            if val:
+                adresy.append((row[0].row, str(val).strip()))
+
+        progress = st.progress(0, text="Zpracovávám adresy...")
+        chyby = []
+
+        for i, (row_idx, adresa_batch) in enumerate(adresy):
+            progress.progress((i + 1) / len(adresy), text=f"({i+1}/{len(adresy)}) {adresa_batch}")
+            vysl = vypocitej(adresa_batch, spz_batch, rok_batch)
+            if vysl is None:
+                ws.cell(row=row_idx, column=2).value = "CHYBA"
+                ws.cell(row=row_idx, column=3).value = "CHYBA"
+                chyby.append(adresa_batch)
+            else:
+                ws.cell(row=row_idx, column=2).value = vysl["celkem"]
+                jednotky = vysl["pul_hodin"] if rok_batch >= 2026 else vysl["ctvrt_hodin"]
+                ws.cell(row=row_idx, column=3).value = jednotky
+
+        progress.empty()
+
+        # Uložit do paměti a nabídnout ke stažení
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        st.success(f"✅ Zpracováno {len(adresy) - len(chyby)}/{len(adresy)} adres.")
+        if chyby:
+            st.warning(f"⚠️ Nepodařilo se zpracovat {len(chyby)} adres: {', '.join(chyby)}")
+
+        st.download_button(
+            label="⬇️ Stáhnout výsledky (.xlsx)",
+            data=output,
+            file_name="cestovne_vysledky.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 # ─── INFO PANEL ──────────────────────────────────────────────────────────────
 with st.expander("ℹ️ O aplikaci"):
@@ -254,8 +318,9 @@ with st.expander("ℹ️ O aplikaci"):
     - Vozidla: Fabia 4.5l, i30 5.9l, MG HS 7.6l
     - Čtvrthodiny (do 2025, max 500 Kč/prac.) + půlhodiny (od 2026, max 1 000 Kč/prac.)
     - Generátor věty pro PUNE s volbou počtu pracovníků
+    - Hromadné zpracování adres z Excelu
 
-    **Deploy:** `pip install streamlit requests`, `streamlit run app.py`
+    **Deploy:** `pip install streamlit requests openpyxl`, `streamlit run app.py`
     """)
 
 st.caption("🎯 Exekutorský úřad Mgr. Jana Škarpy, Šátalská 469/1, Praha 4")
