@@ -32,7 +32,7 @@ st.markdown("**Šátalská 469/1, Praha 4 → [adresa] a zpět**")
 # INPUT
 col1, col2, col3 = st.columns(3)
 with col1:
-    cilova_adresa = st.text_input("Cílová adresa", value="Boskovice")
+    cilova_adresa = st.text_input("Cílová adresa", value="")
 with col2:
     spz = st.selectbox("SPZ vozidla", list(VOZIDLA.keys()))
 with col3:
