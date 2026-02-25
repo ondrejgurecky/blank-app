@@ -100,6 +100,8 @@ def vypocitej(adresa, spz, rok):
         "hod": hod, "min_": min_,
         "pracovnici": st.session_state.get("pracovnici_radio", 1),
         "vyhlaska": VYHLASKY[rok],
+        "den": st.session_state.get("den_single", 1),
+        "mes": st.session_state.get("mes_single", 1),
     }
 
 
@@ -119,6 +121,11 @@ def vygeneruj_pune(r):
     min_ = r["min_"]
     pracovnici = r["pracovnici"]
     vyhlaska = r["vyhlaska"]
+    den = r.get("den", 1)
+    mes = r.get("mes", 1)
+    mesice = ["ledna","února","března","dubna","května","června",
+              "července","srpna","září","října","listopadu","prosince"]
+    datum = f"{den}. {mesice[mes-1]} {rok}"
 
     if pracovnici == 1:
         ucastnil = "Šetření se účastnil"
@@ -159,7 +166,7 @@ def vygeneruj_pune(r):
         cas_text = f"{hod} hodin a {min_:02d} minut"
 
     veta = (
-        f"V roce {rok} bylo provedeno místní šetření na adrese {adresa}. "
+        f"Dne {datum} bylo provedeno místní šetření na adrese {adresa}. "
         f"Cesta ze sídla soudního exekutora a zpět činila {cz(km, 0)} km. "
         f"Při provedení výjezdu bylo využito osobní vozidlo {model}. "
         f"Dle technického průkazu činí kombinovaná spotřeba {cz(spotreba, 1)} l/100 km. "
@@ -196,6 +203,13 @@ with tab1:
     adresa = col1.text_input("Cílová adresa", "")
     spz = col2.selectbox("SPZ vozidla", list(VOZIDLA.keys()), key="spz_single")
     rok = col3.selectbox("Rok", list(reversed(range(2016, 2027))), key="rok_single")
+
+    col4, col5 = st.columns([1, 3])
+    den = col4.number_input("Den", min_value=1, max_value=31, value=1, step=1, key="den_single")
+    mes = col5.selectbox("Měsíc", list(range(1, 13)),
+                         format_func=lambda m: ["ledna","února","března","dubna","května","června",
+                                                 "července","srpna","září","října","listopadu","prosince"][m-1],
+                         key="mes_single")
 
     if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
         with st.spinner("Hledám optimální trasu..."):
