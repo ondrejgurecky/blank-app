@@ -27,7 +27,7 @@ SAZBY_KM = {
 PHM_CENY = {  # BA95 benzín – průměrná cena dle MPSV vyhlášky (Kč/l), platná od 1.1. daného roku
     2016: 29.50, 2017: 29.50, 2018: 30.50, 2019: 33.10, 2020: 32.00,
     2021: 27.80, 2022: 37.10, 2023: 41.20, 2024: 38.20, 2025: 35.80, 2026: 34.70
-
+}
 
 def geocode(adresa, api_key):
     url = "https://api.mapy.cz/v1/geocode"
