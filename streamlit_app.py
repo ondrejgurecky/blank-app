@@ -41,7 +41,7 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
             # Mapy.cz ROUTING API v1
             url = f"https://api.mapy.cz/v1/routing"
             params = {
-                "key": API_KEY,
+                "key": st.secrets.get("MAPY_API")
                 "start": START_ADDR,
                 "finish": adresa,
                 "vehicle": "car"
