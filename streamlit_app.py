@@ -17,32 +17,47 @@ VOZIDLA = {
 }
 
 # SAZBY MPSV 2016-2026 (oficiální vyhlášky)
-VYHLASKY = {
-    2016: "385/2015 Sb.", 2017: "440/2016 Sb.", 2018: "463/2017 Sb.", 2019: "333/2018 Sb.",
-    2020: "358/2019 Sb.", 2021: "589/2020 Sb.", 2022: "511/2021 Sb.", 2023: "467/2022 Sb.",
-    2024: "398/2023 Sb.", 2025: "475/2024 Sb.", 2026: "573/2025 Sb."
-}
-SAZBY_KM = {
-    2016: 3.80, 2017: 3.90, 2018: 4.00, 2019: 4.10, 2020: 4.20,
-    2021: 4.40, 2022: 4.70, 2023: 5.20, 2024: 5.60, 2025: 5.80, 2026: 5.90
-}
-PHM_CENY = {  # BA95 – základní cena dle MPSV vyhlášky platná od 1.1. daného roku (Kč/l)
+PHM_CENY = {  # BA95 – cena dle MPSV vyhlášky (Kč/l)
     2016: 29.70, 2017: 29.50, 2018: 30.50, 2019: 33.10, 2020: 32.00,
-    2021: 27.80, 2022: 37.10, 2023: 41.20, 2024: 38.20, 2025: 35.80, 2026: 34.70
+    "2021a": 27.80, "2021b": 33.80,
+    "2022a": 37.10, "2022b": 44.50,
+    2023: 41.20, 2024: 38.20, 2025: 35.80, 2026: 34.70
 }
 
-# Mimořádné změny cen PHM v průběhu roku:
-# 2021: 1.1.–18.10. → 27,80 Kč; 19.10.–31.12. → 33,80 Kč
-# 2022: 1.1.–13.5.  → 37,10 Kč; 14.5.–31.12.  → 44,50 Kč
-def get_phm_cena(rok, den=None, mes=None):
-    if den is not None and mes is not None:
-        if rok == 2021:
-            if (mes > 10) or (mes == 10 and den >= 19):
-                return 33.80
-        elif rok == 2022:
-            if (mes > 5) or (mes == 5 and den >= 14):
-                return 44.50
-    return PHM_CENY[rok]
+SAZBY_KM_PERIOD = {  # rok nebo period → sazba km
+    2016: 3.80, 2017: 3.90, 2018: 4.00, 2019: 4.10, 2020: 4.20,
+    "2021a": 4.40, "2021b": 4.40,
+    "2022a": 4.70, "2022b": 4.70,
+    2023: 5.20, 2024: 5.60, 2025: 5.80, 2026: 5.90
+}
+
+VYHLASKY_PERIOD = {
+    2016: "385/2015 Sb.", 2017: "440/2016 Sb.", 2018: "463/2017 Sb.", 2019: "333/2018 Sb.",
+    2020: "358/2019 Sb.",
+    "2021a": "589/2020 Sb.", "2021b": "430/2021 Sb.",
+    "2022a": "511/2021 Sb.", "2022b": "196/2022 Sb.",
+    2023: "467/2022 Sb.", 2024: "398/2023 Sb.", 2025: "475/2024 Sb.", 2026: "573/2025 Sb."
+}
+
+# Mapování period na zobrazovaný rok (pro větu)
+PERIOD_ROK = {
+    "2021a": 2021, "2021b": 2021,
+    "2022a": 2022, "2022b": 2022,
+}
+
+# Volby v selectboxu
+ROK_VOLBY = [
+    2026, 2025, 2024, 2023,
+    "2022b", "2022a",
+    "2021b", "2021a",
+    2020, 2019, 2018, 2017, 2016
+]
+ROK_LABELS = {
+    "2022b": "2022  (14.5.–31.12.) – 44,50 Kč/l",
+    "2022a": "2022  (1.1.–13.5.)   – 37,10 Kč/l",
+    "2021b": "2021  (19.10.–31.12.) – 33,80 Kč/l",
+    "2021a": "2021  (1.1.–18.10.)  – 27,80 Kč/l",
+}
 
 
 def cz(cislo, des=2):
@@ -79,8 +94,8 @@ def get_route(start_addr, end_addr, api_key):
     return km, min_
 
 
-def vypocitej(adresa, spz, rok, den=None, mes=None):
-    """Spočítá náhrady pro danou adresu, SPZ a rok. Vrátí dict s výsledky nebo None při chybě."""
+def vypocitej(adresa, spz, period, den=None, mes=None):
+    """Spočítá náhrady pro danou adresu, SPZ a období."""
     try:
         km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
     except Exception:
@@ -89,8 +104,9 @@ def vypocitej(adresa, spz, rok, den=None, mes=None):
     tam_zpet_km = km_jedno * 2
     tam_zpet_min = min_jedno * 2
 
-    sazba = SAZBY_KM[rok]
-    phm_cena = get_phm_cena(rok, den, mes)
+    rok = PERIOD_ROK.get(period, period)
+    sazba = SAZBY_KM_PERIOD[period]
+    phm_cena = PHM_CENY[period]
     spotreba = VOZIDLA[spz]["spotreba"]
     model = VOZIDLA[spz]["model"]
 
@@ -112,7 +128,7 @@ def vypocitej(adresa, spz, rok, den=None, mes=None):
         "ctvrt_hodin": ctvrt_hodin, "pul_hodin": pul_hodin,
         "hod": hod, "min_": min_,
         "pracovnici": st.session_state.get("pracovnici_radio", 1),
-        "vyhlaska": VYHLASKY[rok],
+        "vyhlaska": VYHLASKY_PERIOD[period],
         "den": st.session_state.get("den_single", 1),
         "mes": st.session_state.get("mes_single", 1),
     }
@@ -212,8 +228,18 @@ tab1, tab2 = st.tabs(["📍 Jedna adresa", "📊 Hromadné zpracování (Excel)"
 with tab1:
     col1, col2, col3 = st.columns(3)
     adresa = col1.text_input("Cílová adresa", "")
-    spz = col2.selectbox("SPZ vozidla", list(VOZIDLA.keys()), key="spz_single")
-    rok = col3.selectbox("Rok", list(reversed(range(2016, 2027))), key="rok_single")
+    spz = col2.selectbox(
+        "Vozidlo",
+        list(VOZIDLA.keys()),
+        format_func=lambda x: VOZIDLA[x]["model"],
+        key="spz_single"
+    )
+    rok = col3.selectbox(
+        "Rok / Období",
+        ROK_VOLBY,
+        format_func=lambda x: ROK_LABELS.get(x, str(x)),
+        key="rok_single"
+    )
 
     if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
         with st.spinner("Hledám optimální trasu..."):
@@ -265,13 +291,6 @@ with tab1:
         r["den"] = den
         r["mes"] = mes
 
-        # Přepočítat PHM cenu dle data (důležité pro 2021 a 2022)
-        phm_cena_akt = get_phm_cena(r["rok"], den, mes)
-        if phm_cena_akt != r["phm_cena"]:
-            r["phm_cena"] = phm_cena_akt
-            r["phm_nahrada"] = round(r["phm_litr"] * phm_cena_akt, 2)
-            r["celkem"] = math.ceil(r["zakladni"] + r["phm_nahrada"])
-
         veta, nahrada_cas = vygeneruj_pune(r)
 
         st.info(veta)
@@ -288,8 +307,18 @@ with tab2:
     st.markdown("- **Sloupec C** – počet čtvrthodin / půlhodin")
 
     col1, col2, col3 = st.columns(3)
-    spz_batch = col1.selectbox("SPZ vozidla", list(VOZIDLA.keys()), key="spz_batch")
-    rok_batch = col2.selectbox("Rok", list(reversed(range(2016, 2027))), key="rok_batch")
+    spz_batch = col1.selectbox(
+        "Vozidlo",
+        list(VOZIDLA.keys()),
+        format_func=lambda x: VOZIDLA[x]["model"],
+        key="spz_batch"
+    )
+    rok_batch = col2.selectbox(
+        "Rok / Období",
+        ROK_VOLBY,
+        format_func=lambda x: ROK_LABELS.get(x, str(x)),
+        key="rok_batch"
+    )
 
     uploaded = st.file_uploader("Nahrajte Excel soubor", type=["xls", "xlsx"])
 
