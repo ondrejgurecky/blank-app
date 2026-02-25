@@ -78,6 +78,7 @@ def vygeneruj_pune(r):
     zakladni = r["zakladni"]
     phm_litr = r["phm_litr"]
     phm_nahrada = r["phm_nahrada"]
+    celkem = r["celkem"]
     hod = r["hod"]
     min_ = r["min_"]
     pracovnici = r["pracovnici"]
@@ -116,19 +117,25 @@ def vygeneruj_pune(r):
     else:
         vypocet_cas = f"{prac_text2} × {jednotky} {jednotka_text} × {sazba_casu} Kč"
 
+    if hod == 0:
+        cas_text = f"{min_} minut"
+    else:
+        cas_text = f"{hod} hodin a {min_:02d} minut"
+
     veta = (
         f"V roce {rok} bylo provedeno místní šetření na adrese {adresa}. "
         f"Cesta ze sídla soudního exekutora a zpět činila {cz(km, 0)} km. "
         f"Při provedení výjezdu bylo využito osobní vozidlo {model}. "
         f"Dle technického průkazu činí kombinovaná spotřeba {cz(spotreba, 1)} l/100 km. "
         f"Pohonnou hmotou vozidla je Benzin 95. "
+        f"Dle vyhlášky Ministerstva práce a sociálních věcí č. {vyhlaska} činí sazba základní náhrady "
+        f"za 1 km jízdy {cz(sazba, 2)} Kč a výše průměrné ceny Benzinu 95 činí {cz(phm_cena, 2)} Kč. "
         f"S ohledem na výše uvedené má soudní exekutor nárok na základní náhradu ve výši "
         f"{cz(zakladni)} Kč ({cz(km, 0)} km × {cz(sazba, 2)} Kč) "
         f"a náhradu za spotřebované pohonné hmoty ve výši {cz(phm_nahrada)} Kč "
-        f"({cz(km, 0)} km × {cz(spotreba, 1)} l/100 km × {cz(phm_cena, 2)} Kč). "
-        f"Dle vyhlášky Ministerstva práce a sociálních věcí č. {vyhlaska} činí sazba základní náhrady "
-        f"za 1 km jízdy {cz(sazba, 2)} Kč a výše průměrné ceny Benzinu 95 činí {cz(phm_cena, 2)} Kč. "
-        f"Cesta trvala celkem {hod} hodin a {min_:02d} minut, "
+        f"({cz(km, 0)} km × {cz(spotreba, 1)} l/100 km × {cz(phm_cena, 2)} Kč), "
+        f"celkem tedy zaokrouhleno na {cz(celkem, 0)} Kč. "
+        f"Cesta trvala celkem {cas_text}, "
         f"bylo tedy započato {jednotky} {jednotka_text}. "
         f"{ucastnil} {prac_text}. "
         f"Vzhledem k tomuto má soudní exekutor nárok na náhradu za ztrátu času, "
