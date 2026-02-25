@@ -1,7 +1,5 @@
 import streamlit as st
 import requests
-import pandas as pd
-from datetime import datetime
 
 # KONFIGURACE
 API_KEY = "RaguaOTlcINiC40Dir7Pwnjr-C2PqAAMBF5J6OUgM0M"  # Mapy.cz API
