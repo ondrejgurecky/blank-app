@@ -204,13 +204,6 @@ with tab1:
     spz = col2.selectbox("SPZ vozidla", list(VOZIDLA.keys()), key="spz_single")
     rok = col3.selectbox("Rok", list(reversed(range(2016, 2027))), key="rok_single")
 
-    col4, col5 = st.columns([1, 3])
-    den = col4.number_input("Den", min_value=1, max_value=31, value=1, step=1, key="den_single")
-    mes = col5.selectbox("Měsíc", list(range(1, 13)),
-                         format_func=lambda m: ["ledna","února","března","dubna","května","června",
-                                                 "července","srpna","září","října","listopadu","prosince"][m-1],
-                         key="mes_single")
-
     if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
         with st.spinner("Hledám optimální trasu..."):
             vysledky = vypocitej(adresa, spz, rok)
@@ -251,7 +244,16 @@ with tab1:
             key="pracovnici_radio"
         )
 
+        col_d, col_m = st.columns([1, 3])
+        den = col_d.number_input("Den šetření", min_value=1, max_value=31, value=1, step=1, key="den_single")
+        mes = col_m.selectbox("Měsíc šetření", list(range(1, 13)),
+                              format_func=lambda m: ["ledna","února","března","dubna","května","června",
+                                                      "července","srpna","září","října","listopadu","prosince"][m-1],
+                              key="mes_single")
+
         r["pracovnici"] = pracovnici
+        r["den"] = den
+        r["mes"] = mes
         veta, nahrada_cas = vygeneruj_pune(r)
 
         st.info(veta)
