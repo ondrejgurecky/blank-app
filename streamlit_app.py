@@ -36,7 +36,7 @@ with col1:
 with col2:
     spz = st.selectbox("SPZ vozidla", list(VOZIDLA.keys()))
 with col3:
-    rok = st.selectbox("Rok cesty", list(range(2016, 2027)))
+    rok = st.selectbox("Rok cesty", list(range(2027, 2016)))
 
 if st.button("🧮 SPOČÍTAT", type="primary"):
     with st.spinner("Hledám trasu přes Mapy.cz API..."):
