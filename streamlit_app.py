@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import pandas as pd
 
 # KONFIGURACE
 API_KEY = "RaguaOTlcINiC40Dir7Pwnjr-C2PqAAMBF5J6OUgM0M"  # Mapy.cz API
