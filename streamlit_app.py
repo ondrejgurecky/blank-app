@@ -86,10 +86,10 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
         phm_cena = PHM_CENY[rok]
         spotreba = VOZIDLA[spz]["spotreba"]
 
-        zakladni = round(tam_zpet_km * sazba)
-        phm_litr = round((tam_zpet_km / 100) * spotreba, 1)
-        phm_nahrada = round(phm_litr * phm_cena)
-        celkem = zakladni + phm_nahrada
+        zakladni = tam_zpet_km * sazba
+        phm_litr = tam_zpet_km / 100) * spotreba
+        phm_nahrada = phm_litr * phm_cena
+        celkem = math.ceil (zakladni + phm_nahrada)
 
         ctvrt_hodin = round(tam_zpet_min / 15)
         pul_hodin = round(tam_zpet_min / 30) if rok >= 2026 else None
