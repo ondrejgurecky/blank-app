@@ -246,10 +246,7 @@ with tab1:
 
         col_d, col_m = st.columns([1, 3])
         den = col_d.number_input("Den šetření", min_value=1, max_value=31, value=1, step=1, key="den_single")
-        mes = col_m.selectbox("Měsíc šetření", list(range(1, 13)),
-                              format_func=lambda m: ["ledna","února","března","dubna","května","června",
-                                                      "července","srpna","září","října","listopadu","prosince"][m-1],
-                              key="mes_single")
+        mes = col_m.selectbox("Měsíc šetření", list(range(1, 13)), key="mes_single")
 
         r["pracovnici"] = pracovnici
         r["den"] = den
