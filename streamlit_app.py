@@ -205,6 +205,8 @@ def vygeneruj_pune(r):
         f"a náhradu za spotřebované pohonné hmoty ve výši {cz(phm_nahrada)} Kč "
         f"({cz(km, 0)} km × {cz(spotreba, 1)} l/100 km × {cz(phm_cena, 2)} Kč), "
         f"celkem tedy zaokrouhleno na {cz(celkem, 0)} Kč. "
+        + (f"S ohledem na zákonný limit činí výše určené náhrady cestovních výdajů za tuto cestu 1 500 Kč. "
+           if celkem > 1500 else "")
         f"Cesta trvala celkem {cas_text}, "
         f"bylo tedy započato {jednotky} {jednotka_text}. "
         f"{ucastnil} {prac_text}. "
