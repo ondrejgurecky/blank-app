@@ -87,7 +87,7 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
         spotreba = VOZIDLA[spz]["spotreba"]
 
         zakladni = tam_zpet_km * sazba
-        phm_litr = tam_zpet_km / 100) * spotreba
+        phm_litr = (tam_zpet_km / 100) * spotreba
         phm_nahrada = phm_litr * phm_cena
         celkem = math.ceil (zakladni + phm_nahrada)
 
