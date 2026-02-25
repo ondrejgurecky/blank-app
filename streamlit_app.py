@@ -170,11 +170,13 @@ def vygeneruj_pune(r):
         sazba_casu = 150
         max_na_pracovnika = 1000
         jednotka_text = "půlhodin"
+        jednotka_text1 = "půlhodinu"
     else:
         jednotky = r["ctvrt_hodin"]
         sazba_casu = 50
         max_na_pracovnika = 500
         jednotka_text = "čtvrthodin"
+        jednotka_text1 = "čtvrthodinu"
 
     nahrada_na_pracovnika = min(jednotky * sazba_casu, max_na_pracovnika)
     nahrada_cas_celkem = nahrada_na_pracovnika * pracovnici
@@ -201,7 +203,7 @@ def vygeneruj_pune(r):
            if celkem > 1500 else "")
         + f"Cesta trvala celkem {cas_text}, "
         f"bylo tedy započato {jednotky} {jednotka_text}. "
-        f"Náhrada za ztrátu času činí {cz(sazba_casu, 0)} Kč za započatou {jednotka_text[:-1]}. "
+        f"Náhrada za ztrátu času činí {cz(sazba_casu, 0)} Kč za započatou {jednotka_text1}. "
         f"{ucastnil} {prac_text}. "
         f"Vzhledem k tomuto má soudní exekutor nárok na náhradu za ztrátu času, "
         f"která činí {cz(nahrada_cas_celkem, 0)} Kč."
