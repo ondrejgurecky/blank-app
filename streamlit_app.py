@@ -43,7 +43,7 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
             params = {
                 "apikey": API_KEY,
                 "start": START_ADDR,
-                "finish": adresa,
+                "end": adresa,
                 "vehicle": "car"
             }
             
