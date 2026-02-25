@@ -87,9 +87,9 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
         phm_cena = PHM_CENY[rok]
         spotreba = VOZIDLA[spz]["spotreba"]
 
-        zakladni = tam_zpet_km * sazba
+        zakladni = round (tam_zpet_km * sazba, 2)
         phm_litr = (tam_zpet_km / 100) * spotreba
-        phm_nahrada = phm_litr * phm_cena
+        phm_nahrada = round (phm_litr * phm_cena, 2)
         celkem = math.ceil (zakladni + phm_nahrada)
 
         ctvrt_hodin = round(tam_zpet_min / 15)
