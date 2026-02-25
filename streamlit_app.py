@@ -53,10 +53,10 @@ ROK_VOLBY = [
     2020, 2019, 2018, 2017, 2016
 ]
 ROK_LABELS = {
-    "2022b": "2022  (14.5.–31.12.) – 44,50 Kč/l",
-    "2022a": "2022  (1.1.–13.5.)   – 37,10 Kč/l",
-    "2021b": "2021  (19.10.–31.12.) – 33,80 Kč/l",
-    "2021a": "2021  (1.1.–18.10.)  – 27,80 Kč/l",
+    "2022b": "2022  (14.5.–31.12.)",
+    "2022a": "2022  (1.1.–13.5.)",
+    "2021b": "2021  (19.10.–31.12.)",
+    "2021a": "2021  (1.1.–18.10.)",
 }
 
 
@@ -243,15 +243,52 @@ with tab1:
 
     if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
         with st.spinner("Hledám optimální trasu..."):
-            vysledky = vypocitej(adresa, spz, rok)
-            if vysledky is None:
-                st.warning("🌐 API chyba – trasu se nepodařilo načíst.")
-            else:
-                vysledky["pracovnici"] = st.session_state.get("pracovnici_radio", 1)
-                st.session_state["vysledky"] = vysledky
+            try:
+                km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
+                st.session_state["trasa"] = {
+                    "adresa": adresa,
+                    "km_jedno": km_jedno,
+                    "min_jedno": min_jedno,
+                }
+            except Exception as e:
+                st.warning(f"🌐 API chyba: {str(e)[:80]}… Trasu se nepodařilo načíst.")
 
-    if "vysledky" in st.session_state:
-        r = st.session_state["vysledky"]
+    # Přepočet náhrad při každém renderu (vozidlo/rok se mohlo změnit)
+    if "trasa" in st.session_state:
+        t = st.session_state["trasa"]
+        tam_zpet_km = t["km_jedno"] * 2
+        tam_zpet_min = t["min_jedno"] * 2
+
+        rok_int = PERIOD_ROK.get(rok, rok)
+        sazba = SAZBY_KM_PERIOD[rok]
+        phm_cena = PHM_CENY[rok]
+        spotreba = VOZIDLA[spz]["spotreba"]
+        model = VOZIDLA[spz]["model"]
+
+        zakladni = round(tam_zpet_km * sazba, 2)
+        phm_litr = (tam_zpet_km / 100) * spotreba
+        phm_nahrada = round(phm_litr * phm_cena, 2)
+        celkem = math.ceil(zakladni + phm_nahrada)
+
+        ctvrt_hodin = round(tam_zpet_min / 15) if rok_int < 2026 else None
+        pul_hodin = round(tam_zpet_min / 30) if rok_int >= 2026 else None
+        hod = int(tam_zpet_min // 60)
+        min_ = int(tam_zpet_min % 60)
+
+        r = {
+            "rok": rok_int, "adresa": t["adresa"], "tam_zpet_km": tam_zpet_km,
+            "model": model, "spotreba": spotreba, "sazba": sazba,
+            "phm_cena": phm_cena, "zakladni": zakladni, "phm_litr": phm_litr,
+            "phm_nahrada": phm_nahrada, "celkem": celkem,
+            "ctvrt_hodin": ctvrt_hodin, "pul_hodin": pul_hodin,
+            "hod": hod, "min_": min_,
+            "pracovnici": st.session_state.get("pracovnici_radio", 1),
+            "vyhlaska": VYHLASKY_PERIOD[rok],
+            "den": st.session_state.get("den_single", 1),
+            "mes": st.session_state.get("mes_single", 1),
+        }
+        st.session_state["vysledky"] = r
+
         st.divider()
 
         col1, col2 = st.columns(2)
