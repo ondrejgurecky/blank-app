@@ -92,7 +92,7 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
         phm_nahrada = round (phm_litr * phm_cena, 2)
         celkem = math.ceil (zakladni + phm_nahrada)
 
-        ctvrt_hodin = round(tam_zpet_min / 15)
+        ctvrt_hodin = round(tam_zpet_min / 15) if rok < 2026 else None
         pul_hodin = round(tam_zpet_min / 30) if rok >= 2026 else None
 
         # VÝSLEDEK
@@ -106,7 +106,8 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
             st.markdown("**Detail:**")
             st.write(f"*Základní:* **{zakladni:,} Kč** ({sazba} Kč/km)")
             st.write(f"*PHM:* **{phm_nahrada:,} Kč** ({phm_litr} l × {phm_cena} Kč/l)")
-            st.write(f"*Čtvrthodiny:* **{ctvrt_hodin}**")
+            if ctvrt_hodin:
+                st.write(f"*Čtvrthodiny:* **{ctvrt_hodin}**")
             if pul_hodin:
                 st.write(f"*Půlhodiny:* **{pul_hodin}** (2026+)")
 
