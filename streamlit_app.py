@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 
 # KONFIGURACE
-API_KEY = "RaguaOTlcINiC40Dir7Pwnjr-C2PqAAMBF5J6OUgM0M"  # Mapy.cz API
+API_KEY = st.secrets["MAPY_API"]
 START_ADDR = "Šátalská 469/1, Praha 4, 14100 Praha"
 
 # VOZIDLA uživatele
