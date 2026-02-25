@@ -26,10 +26,23 @@ SAZBY_KM = {
     2016: 3.80, 2017: 3.90, 2018: 4.00, 2019: 4.10, 2020: 4.20,
     2021: 4.40, 2022: 4.70, 2023: 5.20, 2024: 5.60, 2025: 5.80, 2026: 5.90
 }
-PHM_CENY = {
-    2016: 29.50, 2017: 29.50, 2018: 30.50, 2019: 33.10, 2020: 32.00,
+PHM_CENY = {  # BA95 – základní cena dle MPSV vyhlášky platná od 1.1. daného roku (Kč/l)
+    2016: 29.70, 2017: 29.50, 2018: 30.50, 2019: 33.10, 2020: 32.00,
     2021: 27.80, 2022: 37.10, 2023: 41.20, 2024: 38.20, 2025: 35.80, 2026: 34.70
 }
+
+# Mimořádné změny cen PHM v průběhu roku:
+# 2021: 1.1.–18.10. → 27,80 Kč; 19.10.–31.12. → 33,80 Kč
+# 2022: 1.1.–13.5.  → 37,10 Kč; 14.5.–31.12.  → 44,50 Kč
+def get_phm_cena(rok, den=None, mes=None):
+    if den is not None and mes is not None:
+        if rok == 2021:
+            if (mes > 10) or (mes == 10 and den >= 19):
+                return 33.80
+        elif rok == 2022:
+            if (mes > 5) or (mes == 5 and den >= 14):
+                return 44.50
+    return PHM_CENY[rok]
 
 
 def cz(cislo, des=2):
@@ -66,7 +79,7 @@ def get_route(start_addr, end_addr, api_key):
     return km, min_
 
 
-def vypocitej(adresa, spz, rok):
+def vypocitej(adresa, spz, rok, den=None, mes=None):
     """Spočítá náhrady pro danou adresu, SPZ a rok. Vrátí dict s výsledky nebo None při chybě."""
     try:
         km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
@@ -77,7 +90,7 @@ def vypocitej(adresa, spz, rok):
     tam_zpet_min = min_jedno * 2
 
     sazba = SAZBY_KM[rok]
-    phm_cena = PHM_CENY[rok]
+    phm_cena = get_phm_cena(rok, den, mes)
     spotreba = VOZIDLA[spz]["spotreba"]
     model = VOZIDLA[spz]["model"]
 
@@ -226,8 +239,10 @@ with tab1:
             st.write(f"*PHM:* **{cz(r['phm_nahrada'])} Kč** ({cz(r['phm_litr'], 2)} l × {cz(r['phm_cena'], 2)} Kč/l)")
             if r["rok"] >= 2026:
                 st.write(f"*Půlhodiny:* **{r['pul_hodin']}** × 150 Kč (max 1 000 Kč/pracovník)")
+                st.metric("⏱️ Počet půlhodin", r["pul_hodin"])
             else:
                 st.write(f"*Čtvrthodiny:* **{r['ctvrt_hodin']}** × 50 Kč (max 500 Kč/pracovník)")
+                st.metric("⏱️ Počet čtvrthodin", r["ctvrt_hodin"])
 
         st.warning("⚠️ **Exekuční limit: max 1 500 Kč/cestu**")
 
@@ -249,6 +264,14 @@ with tab1:
         r["pracovnici"] = pracovnici
         r["den"] = den
         r["mes"] = mes
+
+        # Přepočítat PHM cenu dle data (důležité pro 2021 a 2022)
+        phm_cena_akt = get_phm_cena(r["rok"], den, mes)
+        if phm_cena_akt != r["phm_cena"]:
+            r["phm_cena"] = phm_cena_akt
+            r["phm_nahrada"] = round(r["phm_litr"] * phm_cena_akt, 2)
+            r["celkem"] = math.ceil(r["zakladni"] + r["phm_nahrada"])
+
         veta, nahrada_cas = vygeneruj_pune(r)
 
         st.info(veta)
