@@ -39,7 +39,7 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
     with st.spinner("Hledám optimální trasu..."):
         try:
             # Mapy.cz ROUTING API v1
-            url = f"https://api.mapy.cz/v1/routing"
+            url = f"https://api.mapy.cz/v1/routing/route"
             params = {
                 "apikey": API_KEY,
                 "start": START_ADDR,
