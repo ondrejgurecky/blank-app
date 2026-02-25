@@ -4,6 +4,7 @@ import pandas as pd
 
 # KONFIGURACE
 API_KEY = st.secrets.get("MAPY_API")
+st.write(f"DEBUG klíč: {str(API_KEY)[:10]}...")  # ← PŘIDEJ DOČASNĚ
 HEADERS = {"Referer": "https://206cestovne.streamlit.app/"}
 START_ADDR = "Šátalská 469/1, Praha 4, 14100 Praha"
 
