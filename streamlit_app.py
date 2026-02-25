@@ -30,10 +30,11 @@ def geocode(adresa, api_key):
     url = "https://api.mapy.cz/v1/geocode"
     params = {"apikey": api_key, "query": adresa, "limit": 1}
     r = requests.get(url, params=params, headers=HEADERS, timeout=10)
+    st.write(f"DEBUG geocode status: {r.status_code}")  # ← PŘIDEJ
+    st.write(f"DEBUG geocode response: {r.text[:300]}")  # ← PŘIDEJ
     data = r.json()
     item = data["items"][0]
     return item["position"]["lon"], item["position"]["lat"]
-
 
 def get_route(start_addr, end_addr, api_key):
     slon, slat = geocode(start_addr, api_key)
