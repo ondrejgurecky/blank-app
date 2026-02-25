@@ -41,7 +41,7 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
             # Mapy.cz ROUTING API v1
             url = f"https://api.mapy.cz/v1/routing"
             params = {
-                "key": st.secrets.get("MAPY_API")
+                "key": API_KEY,
                 "start": START_ADDR,
                 "finish": adresa,
                 "vehicle": "car"
@@ -73,7 +73,8 @@ if st.button("🧮 SPOČÍTAT", type="primary"):
         # VÝPOČET
         sazba = SAZBY_KM[rok]
         phm_cena = PHM_CENY[rok]
-        spotreba = VOZIDLA[spz]
+        spotreba = VOZIDLA[spz]["spotreba"]
+        
         
         zakladni = round(tam_zpet_km * sazba)
         phm_litr = round((tam_zpet_km / 100) * spotreba, 1)
