@@ -4,7 +4,7 @@ import pandas as pd
 
 # KONFIGURACE
 API_KEY = st.secrets.get("MAPY_API")
-st.write(f"DEBUG klíč: {str(API_KEY)[:10]}...")  # ← PŘIDEJ DOČASNĚ
+
 HEADERS = {"Referer": "https://206cestovne.streamlit.app/"}
 START_ADDR = "Šátalská 469/1, Praha 4, 14100 Praha"
 
@@ -57,7 +57,7 @@ def get_route(start_addr, end_addr, api_key):
 
 
 st.set_page_config(page_title="Exekutorský kalkulátor", layout="wide")
-
+st.write(f"DEBUG klíč: {str(API_KEY)[:10]}...")  # ← PŘIDEJ DOČASNĚ
 st.title("🛣️ Exekutorský kalkulátor cestovních náhrad 2016–2026")
 st.markdown("**Šátalská 469/1, Praha 4 → [adresa] a zpět**")
 
