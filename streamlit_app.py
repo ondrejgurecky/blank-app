@@ -7,7 +7,7 @@ import openpyxl
 # KONFIGURACE
 API_KEY = st.secrets.get("MAPY_API")
 HEADERS = {"Referer": "https://206cestovne.streamlit.app/"}
-START_ADDR = "Šátalská 469/1, Praha 4, 14100 Praha"
+START_ADDR = "Šátalská 469/1, Praha 4, 14300 Praha"
 
 # VOZIDLA uživatele
 VOZIDLA = {
