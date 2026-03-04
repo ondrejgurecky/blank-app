@@ -11,9 +11,9 @@ START_ADDR = "Šátalská 469/1, Praha 4, 14300 Praha"
 
 # VOZIDLA uživatele
 VOZIDLA = {
-    "6AB3517": {"model": "Hyundai i30", "spotreba": 5.9, "phm": "BA95"},
     "8AA1204": {"model": "Škoda Fabia", "spotreba": 4.5, "phm": "BA95"},
-    "6SR7185": {"model": "MG HS", "spotreba": 7.6, "phm": "BA95"}
+    "6SR7185": {"model": "MG HS", "spotreba": 7.6, "phm": "BA95"},
+    "6AB3517": {"model": "Hyundai i30", "spotreba": 5.9, "phm": "BA95"}
 }
 
 # SAZBY MPSV 2016-2026 (oficiální vyhlášky)
@@ -241,14 +241,7 @@ with tab1:
     if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
         with st.spinner("Hledám optimální trasu..."):
             try:
-                # DEBUG – dočasně
-                st.write("API klíč načten:", bool(API_KEY))
-                url = "https://api.mapy.cz/v1/geocode"
-                params = {"apikey": API_KEY, "query": adresa, "limit": 1}
-                r = requests.get(url, params=params, headers=HEADERS, timeout=10)
-                st.write("HTTP status:", r.status_code)
-                st.write("Odpověď API:", r.json())
-                # konec DEBUG
+         
                 km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
                 st.session_state["trasa"] = {
                     "adresa": adresa,
