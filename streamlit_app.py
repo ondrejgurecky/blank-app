@@ -241,6 +241,14 @@ with tab1:
     if st.button("🧮 SPOČÍTAT", type="primary", key="btn_single"):
         with st.spinner("Hledám optimální trasu..."):
             try:
+                # DEBUG – dočasně
+                st.write("API klíč načten:", bool(API_KEY))
+                url = "https://api.mapy.cz/v1/geocode"
+                params = {"apikey": API_KEY, "query": adresa, "limit": 1}
+                r = requests.get(url, params=params, headers=HEADERS, timeout=10)
+                st.write("HTTP status:", r.status_code)
+                st.write("Odpověď API:", r.json())
+                # konec DEBUG
                 km_jedno, min_jedno = get_route(START_ADDR, adresa, API_KEY)
                 st.session_state["trasa"] = {
                     "adresa": adresa,
